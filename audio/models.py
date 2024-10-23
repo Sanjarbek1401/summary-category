@@ -54,21 +54,26 @@ class AudioFile(models.Model):
     summary = models.TextField(null=True, blank=True)
     category = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    file_size = models.BigIntegerField(null=True, blank=True)  # Size in bytes
+    file_size = models.BigIntegerField(null=True, blank=True)
 
     def __str__(self):
         return self.title or "No title"
+
+    def format_timestamp(self, milliseconds):
+        """Convert milliseconds to minutes:seconds format"""
+        total_seconds = int(milliseconds / 1000)
+        minutes = total_seconds // 60
+        seconds = total_seconds % 60
+        return f"{minutes:02d}:{seconds:02d}"
 
     def clean(self):
         """Additional model validation"""
         super().clean()
         if self.audio_file:
-            # Set file format based on extension
             ext = os.path.splitext(self.audio_file.name)[1].lower()
             format_map = {'.mp3': 'mp3', '.wav': 'wav', '.m4a': 'm4a'}
             self.file_format = format_map.get(ext)
 
-            # Set file size
             if hasattr(self.audio_file, 'size'):
                 self.file_size = self.audio_file.size
 
@@ -76,7 +81,6 @@ class AudioFile(models.Model):
         self.clean()
         super().save(*args, **kwargs)
         if self.audio_file and not self.category:
-            # Choose transcription method based on language
             if self.language == 'uz':
                 self.transcription = self.transcribe_audio_uzbek(self.audio_file.path)
             else:
@@ -87,8 +91,6 @@ class AudioFile(models.Model):
             self.category = result['category']
             super().save(*args, **kwargs)
 
-    # ... rest of the existing methods (transcribe_audio_uzbek, transcribe_audio_assemblyai, analyze_audio) remain the same ...
-
     def transcribe_audio_uzbek(self, audio_file_path):
         """
         Transcribe audio using Uzbek STT service
@@ -97,40 +99,56 @@ class AudioFile(models.Model):
             raise FileNotFoundError(f"File not found: {audio_file_path}")
 
         try:
-            # Prepare headers with API key
             headers = {
                 'Authorization': f'Bearer {UZBEK_STT_API_KEY}',
                 'Accept': 'application/json'
             }
 
-            # Prepare the audio file for upload
             with open(audio_file_path, 'rb') as audio_file:
                 files = {
-                    'audio': ('audio.wav', audio_file, 'audio/wav')
+                    'audio': ('audio.wav', audio_file, 'audio/wav'),
+                    'diarization': (None, 'true')  # Enable speaker diarization
                 }
 
-                # Make the request to the Uzbek STT service
                 response = requests.post(
                     UZBEK_STT_URL,
                     headers=headers,
                     files=files
                 )
 
-                # Print response for debugging
                 print(f"Uzbek STT Response Status Code: {response.status_code}")
                 print(f"Uzbek STT Response Text: {response.text}")
 
                 if response.status_code != 200:
                     raise Exception(f"Uzbek STT transcription failed: {response.text}")
 
-                # Parse the response
                 result = response.json()
 
-                # Extract transcription from response
-                # Adjust this based on the actual response structure from your STT service
-                transcription = result.get('text', '')
+                # Handle response with speaker diarization
+                segments = result.get('segments', [])
+                if segments:
+                    formatted_transcript = []
+                    current_speaker = None
 
-                return transcription
+                    for segment in segments:
+                        start_time = segment.get('start', 0)
+                        speaker = f"Speaker {segment.get('speaker', '1')}"
+                        text = segment.get('text', '')
+
+                        # Only add speaker label if it changes
+                        if speaker != current_speaker:
+                            formatted_transcript.append(f"\n[{self.format_timestamp(start_time)}] {speaker}:")
+                            current_speaker = speaker
+                        else:
+                            formatted_transcript.append(f"[{self.format_timestamp(start_time)}]")
+
+                        formatted_transcript.append(f" {text}")
+
+                    return " ".join(formatted_transcript)
+                else:
+                    # Fallback for non-diarized response
+                    text = result.get('text', '')
+                    return f"[00:00] Speaker 1: {text}"
 
         except Exception as e:
             print(f"Error in Uzbek transcription: {str(e)}")
@@ -186,12 +204,38 @@ class AudioFile(models.Model):
                 f"https://api.assemblyai.com/v2/transcript/{transcript_id}",
                 headers=headers
             )
-            status = transcript_result.json()['status']
+            result = transcript_result.json()
+            status = result['status']
 
             if status == 'completed':
-                return transcript_result.json()['text']
+                # Process utterances with speaker labels
+                utterances = result.get('utterances', [])
+                if utterances:
+                    formatted_transcript = []
+                    current_speaker = None
+
+                    for utterance in utterances:
+                        start_time = utterance.get('start', 0)
+                        speaker = f"Speaker {utterance.get('speaker', '1')}"
+                        text = utterance.get('text', '')
+
+                        # Only add speaker label if it changes
+                        if speaker != current_speaker:
+                            formatted_transcript.append(f"\n[{self.format_timestamp(start_time)}] {speaker}:")
+                            current_speaker = speaker
+                        else:
+                            formatted_transcript.append(f"[{self.format_timestamp(start_time)}]")
+
+                        formatted_transcript.append(f" {text}")
+
+                    return " ".join(formatted_transcript)
+                else:
+                    # Fallback for non-diarized response
+                    return f"[00:00] Speaker 1: {result['text']}"
+
             elif status == 'failed':
                 raise Exception("Transcription failed.")
+
             time.sleep(5)
 
     def analyze_audio(self, transcription):
@@ -204,7 +248,6 @@ class AudioFile(models.Model):
             "Content-Type": "application/json",
         }
 
-        # Adjust system prompt based on language
         system_prompt = """You are an AI assistant that analyzes text content and provides:
         1. A specific category that best describes the content's main topic or theme. Choose the category based on the actual content.
         2. A brief summary of the content.

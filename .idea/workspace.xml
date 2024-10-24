@@ -5,10 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fbae4f7e-97ee-4dee-b23e-cc54d2d0b0cd" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/audio/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/audio/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/audio/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/audio/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/audio/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/audio/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/audio_analysis/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/audio_analysis/settings.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/audio_analysis/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/audio_analysis/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
     </list>
@@ -75,7 +73,7 @@
       <option name="presentableId" value="Default" />
       <updated>1729576560209</updated>
       <workItem from="1729576561812" duration="7765000" />
-      <workItem from="1729745850783" duration="385000" />
+      <workItem from="1729745850783" duration="7956000" />
     </task>
     <servers />
   </component>

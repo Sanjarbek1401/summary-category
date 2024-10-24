@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 load_dotenv()
 ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
 SAMBANOVA_API_KEY = '67b1dd10-0091-41ed-8279-297a5ac47944'
-UZBEK_STT_API_KEY = '9EcuExDk.K5006qdNmz6TJ8XVBFYkW5oab5lAWYHc'
+UZBEK_STT_API_KEY = 'ZQtN3Hd4.n87J9DFZ8Cndoct7adMOPczFGe8el5O0'
 UZBEK_STT_URL = "https://back.aisha.group/api/v1/stt/post/"
 
 
@@ -100,7 +100,7 @@ class AudioFile(models.Model):
 
         try:
             headers = {
-                'Authorization': f'Bearer {UZBEK_STT_API_KEY}',
+                'x-api-key': UZBEK_STT_API_KEY,
                 'Accept': 'application/json'
             }
 
@@ -339,6 +339,5 @@ class AudioFile(models.Model):
                 'category': default_responses[self.language]['category'],
                 'summary': error_messages.get(self.language, error_messages['en'])
             }
-
 
 

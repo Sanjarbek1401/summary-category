@@ -4,7 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="fbae4f7e-97ee-4dee-b23e-cc54d2d0b0cd" name="Changes" comment="" />
+    <list default="true" id="fbae4f7e-97ee-4dee-b23e-cc54d2d0b0cd" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/audio/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/audio/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/audio/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/audio/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/audio/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/audio/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/audio_analysis/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/audio_analysis/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/audio_analysis/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/audio_analysis/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -18,9 +25,12 @@
       </list>
     </option>
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 5
-}]]></component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
   <component name="ProjectId" id="2nmS33qoyeVWe0HIflPzgJ5BZrF" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -31,6 +41,7 @@
     "DefaultHtmlFileTemplate": "HTML File",
     "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "master",
     "last_opened_file_path": "E:/AudioTahlil/audio_analysis/settings.py",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -64,6 +75,7 @@
       <option name="presentableId" value="Default" />
       <updated>1729576560209</updated>
       <workItem from="1729576561812" duration="7765000" />
+      <workItem from="1729745850783" duration="385000" />
     </task>
     <servers />
   </component>

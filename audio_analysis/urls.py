@@ -25,7 +25,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('audio/', include('audio.urls')),  # 'yourapp' ni o'zingizning app nomingizga o'zgartiring
+    path('', include('audio.urls')),
 ]
 
 if settings.DEBUG:

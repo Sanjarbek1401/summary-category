@@ -27,11 +27,19 @@ SECRET_KEY = 'django-insecure-m8+km@^-!ql3z($3ooof^9-2ctu&(b89(t#w5hx!t=c=&lncdv
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+CSRF_TRUSTED_ORIGINS = [
+    'https://862b-194-93-25-162.ngrok-free.app'
+]
 
-ALLOWED_HOSTS = ['*']
+
+CORS_ALLOWED_ORIGINS = [
+    'https://862b-194-93-25-162.ngrok-free.app'
+]
 
 
-# Application definition
+ALLOWED_HOSTS = ['862b-194-93-25-162.ngrok-free.app', 'localhost', '127.0.0.1']
+
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -123,9 +131,6 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS =[os.path.join(BASE_DIR,'audio/static')]
 STATIC_ROOT = os.path.join(BASE_DIR,'staticfiles')
 MEDIA_URL = '/media/'  # Fayl yuklash URL
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')  # Yuklangan fayllar saqlanadigan papka
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

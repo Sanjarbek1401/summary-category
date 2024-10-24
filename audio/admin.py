@@ -7,7 +7,7 @@ from .models import AudioFile
 @admin.register(AudioFile)
 class AudioFileAdmin(admin.ModelAdmin):
     list_display = (
-    'title', 'language', 'category', 'file_format_display', 'file_size_display', 'duration_display', 'created_at')
+    'title', 'language', 'category', 'file_format_display', 'file_size_display',  'created_at')
     list_filter = ('language', 'category', 'file_format', 'created_at')
     search_fields = ('title', 'category', 'transcription')
     readonly_fields = (

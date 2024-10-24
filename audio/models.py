@@ -240,7 +240,7 @@ class AudioFile(models.Model):
 
     def analyze_audio(self, transcription):
         """
-        Analyze transcribed text using SambaNova AI
+        Analyze transcribed text using SambaNova AI with language-specific responses
         """
         api_url = "https://api.sambanova.ai/v1/chat/completions"
         headers = {
@@ -248,15 +248,51 @@ class AudioFile(models.Model):
             "Content-Type": "application/json",
         }
 
-        system_prompt = """You are an AI assistant that analyzes text content and provides:
-        1. A specific category that best describes the content's main topic or theme. Choose the category based on the actual content.
-        2. A brief summary of the content.
+        # Language-specific system prompts
+        language_prompts = {
+            'uz': """Siz matn mazmunini tahlil qilib beradigan AI yordamchisisiz. Quyidagilarni taqdim eting:
+            1. Mazmunning asosiy mavzusini yoki g'oyasini eng yaxshi tavsiflaydigan aniq kategoriya.
+            2. Mazmunning qisqacha xulosasi.
 
-        If the text is in Uzbek, please provide the category and summary in Uzbek.
+            Javobingizni aynan shu formatda bering:
+            CATEGORY: [siz aniqlagan kategoriya]
+            SUMMARY: [mazmun xulosasi]""",
 
-        Format your response exactly like this:
-        CATEGORY: [your determined category]
-        SUMMARY: [your summary of the content]"""
+            'en': """You are an AI assistant that analyzes text content and provides:
+            1. A specific category that best describes the content's main topic or theme.
+            2. A brief summary of the content.
+
+            Please provide your response in English using this exact format:
+            CATEGORY: [your determined category]
+            SUMMARY: [your summary of the content]""",
+
+            'ru': """Вы - ИИ-ассистент, который анализирует текстовый контент и предоставляет:
+            1. Конкретную категорию, которая лучше всего описывает основную тему или идею контента.
+            2. Краткое содержание контента.
+
+            Предоставьте ответ на русском языке в точном формате:
+            CATEGORY: [определенная вами категория]
+            SUMMARY: [краткое содержание]""",
+
+            'kq': """Siz tekst mazmunın talqılaw ushin járdem beretuǵın AI assistentisiz. Tómendegilerdi keltiriń:
+            1. Mazmunnıń tiykarǵı temasın yamasa ideyasın eń jaqsı súwretleytuǵın kategoriya.
+            2. Mazmunnıń qısqasha juwmaǵı.
+
+            Juwabıńızdı usı formatta beriń:
+            CATEGORY: [siz anıqlaǵan kategoriya]
+            SUMMARY: [mazmun juwmaǵı]"""
+        }
+
+        # Default to English if language not found
+        system_prompt = language_prompts.get(self.language, language_prompts['en'])
+
+        # Default responses for errors
+        default_responses = {
+            'uz': {'category': 'Tasniflanmagan', 'summary': 'Xulosa mavjud emas'},
+            'en': {'category': 'Uncategorized', 'summary': 'Summary not available'},
+            'ru': {'category': 'Без категории', 'summary': 'Сводка недоступна'},
+            'kq': {'category': 'Kategoriyasız', 'summary': 'Juwmaq joq'}
+        }
 
         data = {
             "model": "Meta-Llama-3.1-8B-Instruct",
@@ -269,33 +305,40 @@ class AudioFile(models.Model):
             "top_p": 0.9
         }
 
-        response = requests.post(api_url, headers=headers, json=data)
+        try:
+            response = requests.post(api_url, headers=headers, json=data)
+            response.raise_for_status()
 
-        if response.status_code == 200:
-            try:
-                analysis_result = response.json()
-                result_text = analysis_result.get('choices')[0]['message']['content'].strip()
+            analysis_result = response.json()
+            result_text = analysis_result.get('choices')[0]['message']['content'].strip()
 
-                lines = result_text.split('\n')
-                category = None
-                summary = None
+            lines = result_text.split('\n')
+            category = None
+            summary = None
 
-                for line in lines:
-                    if line.startswith('CATEGORY:'):
-                        category = line.replace('CATEGORY:', '').strip()
-                    elif line.startswith('SUMMARY:'):
-                        summary = line.replace('SUMMARY:', '').strip()
+            for line in lines:
+                if line.startswith('CATEGORY:'):
+                    category = line.replace('CATEGORY:', '').strip()
+                elif line.startswith('SUMMARY:'):
+                    summary = line.replace('SUMMARY:', '').strip()
 
-                return {
-                    'category': category or 'Tasniflanmagan',
-                    'summary': summary or 'Xulosa mavjud emas'
-                }
+            return {
+                'category': category or default_responses[self.language]['category'],
+                'summary': summary or default_responses[self.language]['summary']
+            }
 
-            except Exception as e:
-                print(f"Error parsing response: {e}")
-                return {
-                    'category': 'Tasniflanmagan' if self.language == 'uz' else 'Uncategorized',
-                    'summary': f"Tahlil qilishda xatolik: {str(e)}" if self.language == 'uz' else f"Error analyzing content: {str(e)}"
-                }
-        else:
-            raise Exception(f"Analysis failed with status code {response.status_code}: {response.text}")
+        except Exception as e:
+            print(f"Error in analysis: {e}")
+            error_messages = {
+                'uz': f"Tahlil qilishda xatolik: {str(e)}",
+                'en': f"Error analyzing content: {str(e)}",
+                'ru': f"Ошибка при анализе: {str(e)}",
+                'kq': f"Talqılaw waqtında qátelik: {str(e)}"
+            }
+            return {
+                'category': default_responses[self.language]['category'],
+                'summary': error_messages.get(self.language, error_messages['en'])
+            }
+
+
+

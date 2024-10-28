@@ -1,21 +1,51 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from .models import AudioFile
+from django.urls import reverse
+from django.db.models import Count
+from .models import AudioFile, Category
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'clickable_audio_count', 'created_at')
+    search_fields = ('name', 'description')
+    readonly_fields = ('created_at',)
+    fields = ('name', 'description', 'created_at')
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return self.readonly_fields + ('created_at',)
+        return self.readonly_fields
+
+    def clickable_audio_count(self, obj):
+        count = obj.audiofile_set.count()
+        url = reverse('admin:audio_audiofile_changelist') + f'?category__id__exact={obj.id}'
+        return format_html('<a href="{}">{} files</a>', url, count)
+
+    clickable_audio_count.short_description = 'Audio Files'
+    clickable_audio_count.admin_order_field = 'audio_count'
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.annotate(audio_count=Count('audiofile'))
 
 
 @admin.register(AudioFile)
 class AudioFileAdmin(admin.ModelAdmin):
     list_display = (
-    'title', 'language', 'category', 'file_format_display', 'file_size_display',  'created_at')
+        'title', 'language', 'category_link', 'file_format_display',
+        'file_size_display', 'created_at'
+    )
     list_filter = ('language', 'category', 'file_format', 'created_at')
-    search_fields = ('title', 'category', 'transcription')
+    search_fields = ('title', 'category__name', 'transcription')
     readonly_fields = (
-    'category', 'summary', 'file_format', 'file_size', 'transcription', 'formatted_transcription', 'audio_player',
-    'duration_display')
+        'file_format', 'file_size', 'transcription',
+        'formatted_transcription', 'audio_player', 'duration_display'
+    )
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'audio_file', 'language')
+            'fields': ('title', 'audio_file', 'language', 'category')
         }),
         ('File Information', {
             'fields': ('file_format', 'file_size'),
@@ -24,9 +54,21 @@ class AudioFileAdmin(admin.ModelAdmin):
             'fields': ('audio_player',),
         }),
         ('Processing Results', {
-            'fields': ('formatted_transcription', 'transcription', 'summary', 'category'),
+            'fields': ('formatted_transcription', 'transcription', 'summary'),
         }),
     )
+
+    def category_link(self, obj):
+        if obj.category:
+            return format_html(
+                '<a href="{}">{}</a>',
+                f'/admin/audio/category/{obj.category.id}/change/',
+                obj.category.name
+            )
+        return '-'
+
+    category_link.short_description = 'Category'
+    category_link.admin_order_field = 'category__name'
 
     def file_format_display(self, obj):
         if obj.file_format:
@@ -65,11 +107,8 @@ class AudioFileAdmin(admin.ModelAdmin):
             return '-'
 
         try:
-            # Assuming transcription is stored as a JSON string with speaker and timestamp info
             import json
             transcript_data = json.loads(obj.transcription)
-
-            # Format the transcription with speakers and timestamps
             formatted_text = []
             current_speaker = None
 
@@ -78,7 +117,6 @@ class AudioFileAdmin(admin.ModelAdmin):
                 speaker = segment.get('speaker', 'Speaker 1')
                 text = segment.get('text', '').strip()
 
-                # Only show speaker label if it's different from the previous speaker
                 if speaker != current_speaker:
                     formatted_text.append(
                         f'<div class="transcript-segment">'
@@ -102,13 +140,11 @@ class AudioFileAdmin(admin.ModelAdmin):
                 '</div>'
             )
         except json.JSONDecodeError:
-            # Fallback for plain text transcriptions
             return mark_safe(f'<div class="transcription-container">{obj.transcription}</div>')
 
     formatted_transcription.short_description = 'Formatted Transcription'
 
     def format_timestamp(self, milliseconds):
-        """Convert milliseconds to MM:SS format"""
         total_seconds = int(milliseconds / 1000)
         minutes = total_seconds // 60
         seconds = total_seconds % 60
@@ -130,15 +166,12 @@ class AudioFileAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         if not obj.pk or (obj.audio_file and not obj.category):
-            # New object or new audio file uploaded
             super().save_model(request, obj, form, change)
         else:
-            # Existing object with no new audio file
             if not change or not form.changed_data:
                 super().save_model(request, obj, form, change)
             else:
                 changed_fields = set(form.changed_data)
-                # Only process if audio_file was changed
                 if 'audio_file' in changed_fields:
                     obj.save()
                 else:

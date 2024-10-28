@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
 SAMBANOVA_API_KEY = '67b1dd10-0091-41ed-8279-297a5ac47944'
-UZBEK_STT_API_KEY = 'B0gZm7U9.pZo5NJKQ1CTrKpAxhjBgE4q8NPnWnY9O'
+UZBEK_STT_API_KEY = '0seK6Dur.75P7RKpfQTgpuwYcMhCdRC6h4kHzB5hH'
 UZBEK_STT_URL = "https://back.aisha.group/api/v1/stt/post/"
 
 
@@ -25,11 +25,25 @@ def validate_audio_format(value):
         raise ValidationError(
             f'Unsupported file format. Allowed formats are: {", ".join(valid_formats)}'
         )
+
+
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Category"
+        verbose_name_plural = "Categories"
+        ordering = ['name']
 
     def __str__(self):
         return self.name
+
+    def audio_count(self):
+        return self.audiofile_set.count()
+
+    audio_count.short_description = 'Number of Audio Files'
 
 
 class AudioFile(models.Model):
@@ -372,37 +386,23 @@ class AudioFile(models.Model):
         }
 
         try:
-            # Get appropriate system prompt for the language
             system_prompt = language_prompts.get(self.language, language_prompts['en'])
-
-            # Prepare request data
             data = {
                 "model": "Meta-Llama-3.1-8B-Instruct",
                 "messages": [
                     {"role": "system", "content": system_prompt},
-                    {"role": "user",
-                     "content": f"Please analyze this text and determine its category and provide a summary: {transcription}"}
+                    {"role": "user", "content": f"Analyze: {transcription}"}
                 ],
                 "temperature": 0.7,
                 "top_p": 0.9
             }
 
-            # Send request to SambaNova API
-            logger.info("Sending request to SambaNova API")
             response = requests.post(
                 "https://api.sambanova.ai/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {SAMBANOVA_API_KEY}",
-                    "Content-Type": "application/json",
-                },
+                headers={"Authorization": f"Bearer {SAMBANOVA_API_KEY}"},
                 json=data
             )
 
-            # Log response for debugging
-            logger.info(f"SambaNova API Response Status: {response.status_code}")
-            logger.info(f"SambaNova API Response: {response.text}")
-
-            # Handle response
             response.raise_for_status()
             analysis_result = response.json()
             result_text = analysis_result.get('choices', [{}])[0].get('message', {}).get('content', '').strip()
@@ -411,27 +411,59 @@ class AudioFile(models.Model):
                 logger.error("Empty response from SambaNova API")
                 return default_responses[self.language]
 
-            # Parse the response
-            category = None
+            category_name = None
             summary = None
 
+            # Parse the response
             for line in result_text.split('\n'):
-                line = line.strip()
                 if line.startswith('CATEGORY:'):
-                    category = line.replace('CATEGORY:', '').strip()
+                    category_name = line.replace('CATEGORY:', '').strip()
                 elif line.startswith('SUMMARY:'):
                     summary = line.replace('SUMMARY:', '').strip()
 
-            # Return results, falling back to defaults if parsing failed
-            return {
-                'category': category or default_responses[self.language]['category'],
-                'summary': summary or default_responses[self.language]['summary']
-            }
+            # Use default values if parsing failed
+            if not category_name:
+                category_name = default_responses[self.language]['category']
+            if not summary:
+                summary = default_responses[self.language]['summary']
+
+            try:
+                # Get or create the category
+                category, created = Category.objects.get_or_create(
+                    name=category_name,
+                    defaults={'description': f'Category created from audio analysis in {self.language} language'}
+                )
+
+                # Update the AudioFile instance
+                self.category = category
+                self.summary = summary
+
+                # Return the results
+                return {'category': category, 'summary': summary}
+
+            except Exception as e:
+                logger.error(f"Error creating/getting category: {e}")
+                # Use default category as fallback
+                default_category, _ = Category.objects.get_or_create(
+                    name=default_responses[self.language]['category']
+                )
+                self.category = default_category
+                self.summary = default_responses[self.language]['summary']
+                return {'category': default_category, 'summary': self.summary}
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Network error in analysis: {e}")
-            return default_responses[self.language]
+            default_response = default_responses[self.language]
+            default_category, _ = Category.objects.get_or_create(
+                name=default_response['category']
+            )
+            return {'category': default_category, 'summary': default_response['summary']}
+
         except Exception as e:
             logger.error(f"Error in analysis: {e}")
-            return default_responses[self.language]
+            default_response = default_responses[self.language]
+            default_category, _ = Category.objects.get_or_create(
+                name=default_response['category']
+            )
+            return {'category': default_category, 'summary': default_response['summary']}
 

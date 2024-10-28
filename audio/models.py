@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
 SAMBANOVA_API_KEY = '67b1dd10-0091-41ed-8279-297a5ac47944'
-UZBEK_STT_API_KEY = 'ZQtN3Hd4.n87J9DFZ8Cndoct7adMOPczFGe8el5O0'
+UZBEK_STT_API_KEY = 'B0gZm7U9.pZo5NJKQ1CTrKpAxhjBgE4q8NPnWnY9O'
 UZBEK_STT_URL = "https://back.aisha.group/api/v1/stt/post/"
 
 
@@ -25,6 +25,11 @@ def validate_audio_format(value):
         raise ValidationError(
             f'Unsupported file format. Allowed formats are: {", ".join(valid_formats)}'
         )
+class Category(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 class AudioFile(models.Model):
@@ -57,7 +62,7 @@ class AudioFile(models.Model):
     language = models.CharField(choices=LANGUAGE_CHOICES, max_length=2)
     transcription = models.TextField(null=True, blank=True)
     summary = models.TextField(null=True, blank=True)
-    category = models.CharField(max_length=255, null=True, blank=True)
+    category = models.ForeignKey(Category, null=True, blank=True, on_delete=models.SET_NULL)
     created_at = models.DateTimeField(auto_now_add=True)
     file_size = models.BigIntegerField(null=True, blank=True)
     processing_status = models.CharField(max_length=20, default='pending')
@@ -429,3 +434,4 @@ class AudioFile(models.Model):
         except Exception as e:
             logger.error(f"Error in analysis: {e}")
             return default_responses[self.language]
+

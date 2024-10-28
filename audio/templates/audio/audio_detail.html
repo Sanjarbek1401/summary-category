@@ -1,19 +1,182 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Tafsilotlari</title>
+    <title>{{ audio_file.title }} - Audio Detail</title>
+
+    <!-- Tailwind CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- AlpineJS for interactivity -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        .transcript-segment {
+            margin-bottom: 0.5rem;
+        }
+        .timestamp {
+            color: #666;
+            font-size: 0.875rem;
+        }
+
+        .speaker {
+            color: #2563eb;
+            font-weight: 500;
+            margin-left: 0.5rem;
+        }
+        .text {
+            margin-left: 0.5rem;
+        }
+        .transcription-container {
+            line-height: 1.6;
+        }
+        .tab-button {
+            padding: 0.75rem 1rem;
+            border-bottom: 2px solid transparent;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .tab-button.active {
+            border-bottom-color: #3b82f6;
+            color: #2563eb;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
 </head>
-<body>
-    <h1>Audio Tafsilotlari</h1>
-    <p><strong>Audio fayl:</strong></p>
-    <audio controls>
-        <source src="{{ audio_file.file.url }}" type="audio/wav">
-        Your browser does not support the audio element.
-    </audio>
-    <p><strong>Transkripsiya:</strong> {{ audio_file.transcription }}</p>
-    <br>
-    <a href="{% url 'audio:home' %}">Bosh sahifaga qaytish</a>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="bg-white shadow rounded-lg">
+            <!-- Header -->
+            <div class="border-b px-6 py-4">
+                <div class="audio">
+                        <div class="bg-gray-30 p-4 rounded-lg">
+                            {{ audio_player|safe }}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Tabs Container -->
+            <div x-data="{ activeTab: 'basic' }" class="px-6 py-4">
+                <!-- Tab Navigation -->
+                <div class="border-b mb-4">
+                    <nav class="flex space-x-4" aria-label="Tabs">
+                        <button
+                            @click="activeTab = 'basic'"
+                            :class="{'tab-button': true, 'active': activeTab === 'basic'}"
+                            type="button">
+                            Basic Information
+                        </button>
+                        <button
+                            @click="activeTab = 'file'"
+                            :class="{'tab-button': true, 'active': activeTab === 'file'}"
+                            type="button">
+                            File Information
+                        </button>
+{#                        <button#}
+{#                            @click="activeTab = 'preview'"#}
+{#                            :class="{'tab-button': true, 'active': activeTab === 'preview'}"#}
+{#                            type="button">#}
+{#                            Audio Preview#}
+{#                        </button>#}
+{#                        <button#}
+{#                            @click="activeTab = 'processing'"#}
+{#                            :class="{'tab-button': true, 'active': activeTab === 'processing'}"#}
+{#                            type="button">#}
+{#                            Processing Results#}
+{#                        </button>#}
+                    </nav>
+                </div>
+
+                <!-- Tab Contents -->
+                <div class="py-4">
+                    <!-- Basic Information -->
+                    <div x-show="activeTab === 'basic'" class="space-y-12">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+{#                            <div class="mb-4">#}
+{#                                <h3 class="font-medium text-gray-700 mb-1">Title</h3>#}
+{#                                <p>{{ audio_file.title }}</p>#}
+{#                            </div>#}
+                            <div>
+                                <h3 class="font-medium text-gray-700 mb-1">Language</h3>
+                                <p>{{ audio_file.language }}</p>
+                            </div>
+                            <div>
+                            <h3 class="font-medium text-gray-700 mb-2">Transcription</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg max-h-96 overflow-y-auto">
+                                {{ formatted_transcription|safe }}
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-700 mb-2">Summary</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                {{ audio_file.summary|default:"No summary available" }}
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-700 mb-2">Category</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                {{ audio_file.category|default:"Uncategorized" }}
+                            </div>
+                        </div>
+                    <div x-show="activeTab === 'processing'" class="space-y-6">
+
+                    </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- File Information -->
+                    <div x-show="activeTab === 'file'" class="space-y-4">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="mb-4">
+                                <h3 class="font-medium text-gray-700 mb-1">Format</h3>
+                                <p>{{ file_format_display|safe }}</p>
+                            </div>
+                            <div class="mb-4">
+                                <h3 class="font-medium text-gray-700 mb-1">Size</h3>
+                                <p>{{ file_size_display }}</p>
+                            </div>
+{#                            <div>#}
+{#                                <h3 class="font-medium text-gray-700 mb-1">Duration</h3>#}
+{#                                <p>{{ duration_display }}</p>#}
+{#                            </div>#}
+                        </div>
+                    </div>
+
+                    <!-- Audio Preview -->
+
+
+                    <!-- Processing Results -->
+                    <a href="/" class="btn w-100 btn-upload" style="
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #333;
+            background-color: #e7e9ec;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        " onmouseover="this.style.backgroundColor='#d0d4db'; this.style.color='#000'; this.style.boxShadow='0px 8px 16px rgba(0, 0, 0, 0.2)'; this.style.transform='scale(1.03)'" onmouseout="this.style.backgroundColor='#e7e9ec'; this.style.color='#333'; this.style.boxShadow='0px 5px 10px rgba(0, 0, 0, 0.1)'; this.style.transform='scale(1)'">
+            <i class="bi bi-arrow-left-circle me-2" style="font-size: 1.3rem; color: #555;"></i> Back
+        </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

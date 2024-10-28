@@ -1,16 +1,312 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Yuklash</title>
+    <title>Audio Transcription</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <style>
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #0d6efd;
+            background: #e9ecef;
+        }
+
+        .upload-area i {
+            font-size: 3rem;
+            color: #6c757d;
+            margin-bottom: 1rem;
+        }
+
+        .file-info {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .progress {
+            height: 0.5rem;
+        }
+
+        .language-select {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+        }
+
+        .btn-upload {
+            min-width: 150px;
+        }
+
+        .alert {
+            display: none;
+        }
+
+        .audio-icon {
+            font-size: 1.5rem;
+            color: #198754;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading {
+            animation: spin 1s linear infinite;
+        }
+
+        .file-name {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
 </head>
-<body>
-    <h1>Audio Fayl Yuklash</h1>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Yuklash</button>
-    </form>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white py-3">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-microphone me-2"></i>
+                            Audio Transcription
+                        </h4>
+                        <p class="text-muted small mb-0 mt-1">
+                            Upload your audio file for automatic transcription and analysis
+                        </p>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                            {% csrf_token %}
+
+                            <!-- Upload Area -->
+                            <div class="upload-area mb-4" id="dropZone">
+                                <input type="file" name="audio_file" id="audioFile" accept=".mp3,.wav,.m4a" class="d-none" required>
+                                <div class="upload-prompt">
+                                    <i class="fas fa-cloud-upload-alt mb-3"></i>
+                                    <h5>Drag and drop your audio file here</h5>
+                                    <p class="text-muted mb-2">or</p>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('audioFile').click()">
+                                        Browse Files
+                                    </button>
+                                    <p class="text-muted small mt-3 mb-0">
+                                        Supported formats: MP3, WAV, M4A
+                                    </p>
+                                </div>
+                                <div class="file-info">
+                                    <i class="fas fa-file-audio audio-icon"></i>
+                                    <span class="file-name"></span>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" id="removeFile">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Language Selection -->
+                            <div class="row g-3 align-items-center">
+                                <div class="col-md-6">
+                                    <select name="language" class="form-select language-select" required>
+                                        <option value="">Select Language</option>
+                                        <option value="uz">O'zbek</option>
+                                        <option value="ru">Rus</option>
+                                        <option value="en">Ingliz</option>
+                                        <option value="kq">Qoraqalpoq</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <button type="submit" class="btn btn-primary w-100 btn-upload" disabled>
+                                        <span class="normal-state">
+                                            <i class="fas fa-upload me-2"></i>Upload and Transcribe
+                                        </span>
+                                        <span class="loading-state d-none">
+                                            <i class="fas fa-spinner loading me-2"></i>Processing...
+                                        </span>
+                                    </button>
+                                </div>
+                                <div>
+                                    <a href="#" id="resultButton" class="btn btn-primary w-100 btn-upload">
+                                        <span class="normal-state">
+                                            <i class="me-2"></i>Result
+                                        </span>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="progress mt-4 d-none" id="uploadProgress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                     role="progressbar" style="width: 0%"></div>
+                            </div>
+
+                            <!-- Alerts -->
+                            <div class="alert alert-success alert-dismissible fade show mt-4" role="alert" id="successAlert">
+                                <i class="fas fa-check-circle me-2"></i>
+                                File uploaded successfully! Processing will begin shortly.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+
+                            <div class="alert alert-danger alert-dismissible fade show mt-4" role="alert" id="errorAlert">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <span class="error-message">An error occurred during upload. Please try again.</span>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        </form>
+
+                        <!-- Transcription Result Section -->
+                        <div id="transcriptionResult" class="mt-4 d-none">
+                            <h5>Transcription Result:</h5>
+                            <p id="transcriptionText" class="bg-light p-3 border rounded"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('audioFile');
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadButton = uploadForm.querySelector('button[type="submit"]');
+    const fileInfo = document.querySelector('.file-info');
+    const uploadPrompt = document.querySelector('.upload-prompt');
+    const fileName = document.querySelector('.file-name');
+    const removeFileBtn = document.getElementById('removeFile');
+    const progressBar = document.getElementById('uploadProgress');
+    const successAlert = document.getElementById('successAlert');
+    const errorAlert = document.getElementById('errorAlert');
+    const transcriptionResult = document.getElementById('transcriptionResult');
+    const transcriptionText = document.getElementById('transcriptionText');
+
+    // Enable or disable the upload button based on file and language selection
+    function updateUploadButton() {
+        const fileSelected = fileInput.files.length > 0;
+        const languageSelected = uploadForm.querySelector('select[name="language"]').value !== '';
+        uploadButton.disabled = !(fileSelected && languageSelected);
+    }
+
+    // Handle selected file
+    function handleFile(file) {
+        if (file && file.type.startsWith('audio/') || /\.(mp3|wav|m4a)$/i.test(file.name)) {
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+
+            fileName.textContent = file.name;
+            uploadPrompt.style.display = 'none';
+            fileInfo.style.display = 'flex';
+            updateUploadButton();
+        } else {
+            showError('Please upload a valid audio file (MP3, WAV, or M4A)');
+        }
+    }
+
+    // Display error message
+    function showError(message) {
+        errorAlert.querySelector('.error-message').textContent = message;
+        errorAlert.style.display = 'block';
+        successAlert.style.display = 'none';
+    }
+
+    // Drag and drop handlers
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        handleFile(e.dataTransfer.files[0]);
+    });
+
+    // File input change handler
+    fileInput.addEventListener('change', (e) => {
+        handleFile(e.target.files[0]);
+    });
+
+    // Remove file handler
+    removeFileBtn.addEventListener('click', () => {
+        fileInput.value = '';
+        uploadPrompt.style.display = 'block';
+        fileInfo.style.display = 'none';
+        updateUploadButton();
+    });
+
+    // Language select handler
+    uploadForm.querySelector('select[name="language"]').addEventListener('change', updateUploadButton);
+
+    // Form submission with AJAX
+    uploadForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+
+        // Show progress bar
+        progressBar.classList.remove('d-none');
+        uploadButton.querySelector('.normal-state').classList.add('d-none');
+        uploadButton.querySelector('.loading-state').classList.remove('d-none');
+        uploadButton.disabled = true;
+
+        fetch(uploadForm.action || window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}', // Include CSRF token if using Django
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Handle server response
+            if (data.status === 'success') {
+                // Show success alert
+                successAlert.style.display = 'block';
+                transcriptionResult.classList.remove('d-none');
+                transcriptionText.textContent = data.transcription;
+
+                // Redirect to audio detail page with the audio ID
+                window.location.href = `/audio_detail/${data.audio_id}/`;
+
+            } else {
+                showError(data.errors || 'An error occurred during processing.');
+            }
+        })
+        .catch(err => {
+            showError('An error occurred. Please try again later.');
+        })
+        .finally(() => {
+            // Hide progress bar and reset upload button
+            progressBar.classList.add('d-none');
+            uploadButton.querySelector('.normal-state').classList.remove('d-none');
+            uploadButton.querySelector('.loading-state').classList.add('d-none');
+            uploadButton.disabled = false;
+        });
+    });
+});
+
+    </script>
 </body>
 </html>

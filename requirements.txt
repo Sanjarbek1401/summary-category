@@ -5,3 +5,4 @@ python-decouple~=3.8
 assemblyai
 google-generativeai
 gunicorn-23.0.0
+celery ~= 5.4.0

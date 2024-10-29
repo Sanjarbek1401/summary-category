@@ -37,7 +37,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 
-ALLOWED_HOSTS = ['862b-194-93-25-162.ngrok-free.app', 'localhost', '127.0.0.1','http://143.198.142.20/']
+ALLOWED_HOSTS = ['862b-194-93-25-162.ngrok-free.app', 'localhost', '127.0.0.1','143.198.142.20']
 
 
 

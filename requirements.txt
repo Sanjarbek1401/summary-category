@@ -4,5 +4,5 @@ python-dotenv~=1.0.1
 python-decouple~=3.8
 assemblyai
 google-generativeai
-gunicorn-23.0.0
+gunicorn
 celery ~= 5.4.0

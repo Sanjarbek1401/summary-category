@@ -6,7 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="fbae4f7e-97ee-4dee-b23e-cc54d2d0b0cd" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/audio_analysis/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/audio_analysis/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/audio/templates/audio/upload_audio.html" beforeDir="false" afterPath="$PROJECT_DIR$/audio/templates/audio/upload_audio.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -79,7 +79,8 @@
       <workItem from="1729576561812" duration="7765000" />
       <workItem from="1729745850783" duration="35550000" />
       <workItem from="1730048355800" duration="37634000" />
-      <workItem from="1730266659502" duration="20668000" />
+      <workItem from="1730266659502" duration="21519000" />
+      <workItem from="1730352319343" duration="2849000" />
     </task>
     <servers />
   </component>
